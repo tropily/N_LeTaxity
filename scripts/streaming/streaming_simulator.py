@@ -1,44 +1,93 @@
-import boto3
 import json
 import time
 import random
-from datetime import datetime, timedelta
+import boto3
+import pandas as pd
+from datetime import datetime, timezone
+from decimal import Decimal
 
-# Firehose stream name and region
-FIREHOSE_STREAM_NAME = 'your-firehose-name'
-REGION = 'us-east-1'  # Change as needed
+# Constants
+FIREHOSE_STREAM_NAME = 'taxi_streaming_raw_data'
+REGION = 'us-east-1'
+DYNAMODB_TABLE_NAME = 'trip_streaming_log'
+PARQUET_S3_PATH = 's3://teo-nyc-taxi/processed/trip_data/cab_type=yellow/year=2024/month=12/day=13/'
+SIMULATED_HOUR = 8  # Simulate trips as if they happened at 8 AM
+BURST_INTERVAL_SEC = 5  # Delay between bursts
 
-# Initialize Firehose client
+# AWS Clients
 firehose = boto3.client('firehose', region_name=REGION)
+dynamodb = boto3.resource('dynamodb', region_name=REGION)
+dynamo_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
 
-def generate_trip_event():
-    now = datetime.utcnow()
-    pickup_time = now - timedelta(minutes=random.randint(1, 15))
-    dropoff_time = pickup_time + timedelta(minutes=random.randint(5, 20))
-    
-    trip = {
-        "trip_id": f"cab_{random.randint(100000, 999999)}",
-        "pickup_time": pickup_time.strftime("%Y-%m-%d %H:%M:%S"),
-        "dropoff_time": dropoff_time.strftime("%Y-%m-%d %H:%M:%S"),
-        "PULocationID": random.randint(1, 265),
-        "DOLocationID": random.randint(1, 265),
-        "passenger_count": random.randint(1, 4),
-        "fare_amount": round(random.uniform(5.0, 75.0), 2),
-        "payment_type": random.choice([1, 2])  # 1 = Card, 2 = Cash
-    }
-    return trip
+# Load historical Parquet data
+print("📦 Loading historical data from S3...")
+df = pd.read_parquet(PARQUET_S3_PATH)
+df = df[df['pickup_datetime'].dt.hour == SIMULATED_HOUR]
+
+# Clean data
+df = df.fillna({
+    "passenger_count": 1,
+    "fare_amount": 0,
+    "payment_type": 1,
+    "pulocationid": 0,
+    "dolocationid": 0
+})
+df = df.reset_index(drop=True)
+
+print(f"✅ Loaded {len(df)} historical records for hour {SIMULATED_HOUR}")
+print("🚀 Streaming historical taxi trips to Firehose...\n")
 
 def send_to_firehose(record):
-    response = firehose.put_record(
-        DeliveryStreamName=FIREHOSE_STREAM_NAME,
-        Record={'Data': json.dumps(record) + "\n"}
-    )
-    print(f"[{datetime.utcnow()}] Sent trip_id={record['trip_id']} status={response['ResponseMetadata']['HTTPStatusCode']}")
+    try:
+        fare = record.get("fare_amount")
+        if pd.isna(fare):
+            print("[⚠️ Skipped] NaN fare_amount")
+            return
 
+        firehose_record = {
+            "trip_id": f"cab_{random.randint(100000, 999999)}",
+            "pickup_datetime": record["pickup_datetime"].strftime("%Y-%m-%d %H:%M:%S"),
+            "dropoff_datetime": record["dropoff_datetime"].strftime("%Y-%m-%d %H:%M:%S"),
+            "PULocationID": int(record.get("pulocationid")),
+            "DOLocationID": int(record.get("dolocationid")),
+            "passenger_count": int(record.get("passenger_count")),
+            "fare_amount": float(fare),
+            "payment_type": int(record.get("payment_type")),
+            "event_time": datetime.now(timezone.utc).isoformat()  # ⬅️ Fixed timezone
+        }
+
+        response = firehose.put_record(
+            DeliveryStreamName=FIREHOSE_STREAM_NAME,
+            Record={'Data': json.dumps(firehose_record) + "\n"}
+        )
+        print(f"[Sent] trip_id={firehose_record['trip_id']} time={firehose_record['event_time']}")
+
+    except Exception as e:
+        print(f"[Firehose Error] {e}")
+
+def log_to_dynamodb(record):
+    try:
+        item = {
+            "trip_id": f"cab_{random.randint(100000, 999999)}",
+            "pickup_datetime": record["pickup_datetime"].strftime("%Y-%m-%d %H:%M:%S"),
+            "dropoff_datetime": record["dropoff_datetime"].strftime("%Y-%m-%d %H:%M:%S"),
+            "PULocationID": int(record.get("pulocationid")),
+            "DOLocationID": int(record.get("dolocationid")),
+            "passenger_count": int(record.get("passenger_count")),
+            "fare_amount": Decimal(str(round(float(record.get("fare_amount")), 2))),
+            "payment_type": int(record.get("payment_type")),
+            "event_time": datetime.now(timezone.utc).isoformat()
+        }
+        dynamo_table.put_item(Item=item)
+
+    except Exception as e:
+        print(f"[DynamoDB Error] {e}")
+
+# Main loop
 if __name__ == "__main__":
-    print("🚖 Streaming NYC Taxi trips to Firehose...")
-
     while True:
-        trip = generate_trip_event()
-        send_to_firehose(trip)
-        time.sleep(1)  # Simulate 1 record per second
+        for _ in range(10):  # Adjust burst size if needed
+            row = df.sample(1).iloc[0]
+            send_to_firehose(row)
+            log_to_dynamodb(row)
+        time.sleep(BURST_INTERVAL_SEC)

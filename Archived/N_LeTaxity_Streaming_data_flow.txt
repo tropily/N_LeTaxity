@@ -1,0 +1,55 @@
+[simulator.py] 
+    |
+    |  (generates trip records every second)
+    v
+[Kinesis Firehose: taxi_streaming_raw_data]
+    |
+    |---> [Lambda: lambda_cleanse_firehose_trip_data]
+    |         - Cleans field names (e.g., PULocationID -> pulocationid)
+    |         - Adds timestamps: event_time, lambda_received_time
+    |         - Sets partition keys (year, month, day, hour)
+    |
+    v
+[S3 Bucket: raw/streaming/year=YYYY/month=MM/day=DD/hour=HH/]
+    |
+    |  (Every 2 minutes)
+    v
+[EventBridge Rule: Trigger]
+    |
+    v
+[Lambda: streaming_trips_copy_to_redshift]
+    |
+    |---> [lambda_handler.py] 
+    |         - Entry point, loops through new S3 files
+    |
+    |---> [lambda_list_unprocessed_files.py]
+    |         - Compares S3 files with processed pipeline_ids in DynamoDB
+    |
+    |---> [lambda_copy_to_redshift.py]
+    |         - Runs COPY from S3 to staging table
+    |         - INSERT into final table (dedup by trip_id)
+    |         - Adds `inserted_at` timestamp
+    |
+    |---> [lambda_dynamo_tracker.py]
+    |         - Logs success/failure into DynamoDB control table
+    |
+    v
+[Amazon Redshift Serverless]
+    |
+    |-- staging table: public.staging_taxi_streaming_trips
+    |-- final table:   public.taxi_streaming_trips
+    |
+    |-- Contains:
+            - pickup_datetime
+            - dropoff_datetime
+            - pulocationid, dolocationid
+            - passenger_count, fare_amount
+            - event_time, lambda_received_time, inserted_at
+            - year, month, day, hour (partition info)
+
+[DynamoDB Table: data_pipeline_control_table]
+    |
+    |-- Tracks file-level pipeline status:
+            - pipeline_id (S3 key)
+            - pipeline_type, dataset_name
+            - s3_uri, status, copied_at, notes
