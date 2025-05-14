@@ -1,6 +1,6 @@
-# N\_LeTaxity: NYC Taxi Streaming + Batch Data Pipeline
+## 🚖 N_LeTaxity: NYC Taxi Streaming + Batch Data Pipeline
 
-Welcome to N\_LeTaxity, a production-graded, serverless data engineering platform built on AWS featuring streaming ingestion, batch ETL, and real-time dashboards using NYC Taxi data.
+Welcome to N_LeTaxity — An AWS serverless data engineering project designed with production-grade architecture patterns. It features streaming ingestion, batch ETL, data warehousing, and real-time dashboards using NYC Taxi data.
 
 ---
 
@@ -21,33 +21,22 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 
 ## 🗺️ Architecture Diagram
 
-*(Insert your architecture diagram here)*
-
-```markdown
-![Architecture Diagram](https://raw.githubusercontent.com/tropily/N_LeTaxity/main/docs/Architecture-Diagram.jpg)
-```
+![Architecture Diagram](docs/Architecture-Diagram.jpg)
 
 ---
 
 ## 📂 Project Directory Structure
 
 ```markdown
-├── README.md
-├── /scripts
-│   ├── streaming_simulator.py
-│   └── batch_upload_trigger.py
-├── /streamlit_dashboard
-│   └── StreamIt_from_redshift_vw.py
-├── /glue_jobs
-│   └── glue_process_taxi_data.py
-├── /lambdas
-│   ├── lambda_cleanse_firehose_trip_data.py
-│   ├── lambda_trips_copy_to_redshift.py
-│   └── other_lambdas.py
-├── /infrastructure
-│   └── step_functions_definition.json
-├── /docs
-│   └── architecture_diagram.png
+├── 📄 README.md — Project documentation
+├── 📊 analytics — Streamlit dashboards & analytics scripts
+├── 🗂 Archived — Historical notes, lessons learned, old reports & test scripts
+├── 🖼️ docs — Architecture diagrams, streaming KPIs visuals
+├── 📝 scripts — Batch & Streaming data pipeline code
+│ ├── batch — Lambda scripts for Redshift ETL & Glue triggers
+│ ├── helpers — Shared libraries (e.g., pipeline logger layer)
+│ └── streaming — Streaming ingestion & simulation Lambda functions
+└── 🗄️ sql — Redshift SQL DDL & queries
 ```
 
 ---
@@ -101,7 +90,9 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 
 ## 📸 Sample Dashboard Screenshot
 
-*(Insert screenshot here)*
+![Architecture Diagram](docs/Streaming-KPI.jpg)
+
+![Architecture Diagram](docs/Streaming-Dashboard-1.jpg)
 
 ---
 
@@ -120,7 +111,7 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 
 ## 💬 Credits
 
-* NYC Taxi public datasets.
+* NYC Taxi and Limousine Comission.
 
 
 ---
