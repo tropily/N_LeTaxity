@@ -24,7 +24,7 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 *(Insert your architecture diagram here)*
 
 ```markdown
-![Architecture Diagram](docs/Architecture-Diagram.jpg)
+![Architecture Diagram](https://raw.githubusercontent.com/tropily/N_LeTaxity/main/docs/Architecture-Diagram.jpg)
 ```
 
 ---
