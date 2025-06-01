@@ -1,6 +1,6 @@
 ## 🚖 N_LeTaxity: NYC Taxi Streaming + Batch Data Pipeline
 
-Welcome to N_LeTaxity — An AWS serverless data engineering project designed with production-grade architecture patterns. It features streaming ingestion, batch ETL, data warehousing, and real-time dashboards using NYC Taxi data.
+Welcome to N_LeTaxity — A cloud-native data engineering project showcasing streaming & batch pipelines, Snowflake and Redshift data warehousing, and real-time analytics on NYC Taxi data.
 
 ---
 
@@ -11,6 +11,7 @@ Welcome to N_LeTaxity — An AWS serverless data engineering project designed wi
 * **S3 + AWS Glue + Step Functions**: Batch ingestion and ETL orchestration.
 * **S3 Data Lake**: Organized storage into raw/ and processed/ zones.
 * **Redshift Serverless**: Centralized analytics warehouse for both streaming and batch data.
+* **Snowflake**: Cloud data warehouse integration for benchmark against Redshift.
 * **DynamoDB**: Lightweight control and audit logs for improved pipeline observability and recovery.
 * **AWS Step Functions**: End-to-end orchestration of automated ETL workflows.
 * **Streamlit**: Real-time dashboard with KPIs, graphs, and streaming vs baseline comparisons.
@@ -28,15 +29,19 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 ## 📂 Project Directory Structure
 
 ```markdown
-├── 📄 README.md — Project documentation
-├── 📊 analytics — Streamlit dashboards & analytics scripts
-├── 🗂 Archived — Historical notes, lessons learned, old reports & test scripts
-├── 🖼️ docs — Architecture diagrams, streaming KPIs visuals
-├── 📝 scripts — Batch & Streaming data pipeline code
-│ ├── batch — Lambda scripts for Redshift ETL & Glue triggers
-│ ├── helpers — Shared libraries (e.g., pipeline logger layer)
-│ └── streaming — Streaming ingestion & simulation Lambda functions
-└── 🗄️ sql — Redshift SQL DDL & queries
+├── 📄 README.md — Project documentation  
+├── 📊 analytics — Streamlit dashboards & analytics scripts  
+├── 🗂 Archived — Historical notes, lessons learned, old reports & test scripts  
+├── 🖼️ docs — Architecture diagrams, performance charts, streaming KPIs visuals  
+├── 📝 scripts — Batch & Streaming data pipeline code  
+│   ├── batch — Lambda scripts for Redshift ETL & Glue triggers  
+│   ├── helpers — Shared libraries (e.g., pipeline logger layer)  
+│   └── streaming — Streaming ingestion & simulation Lambda functions  
+├── 🗄️ sql — SQL DDL & queries  
+│   ├── redshift — Redshift DDL, ETL, and adhoc queries  
+│   ├── snowflake — Snowflake DDL, ETL, and adhoc queries  
+│   └── benchmark — Redshift vs. Snowflake performance   
+
 ```
 
 ---
@@ -49,6 +54,7 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 * **Amazon Kinesis Data Firehose** — Streaming ingestion to S3.
 * **AWS Lambda** — Serverless compute for data enrichment and transformation.
 * **Amazon Redshift Serverless** — Centralized data warehouse for analytics.
+* * **Snowflake** — Cloud data warehouse
 * **AWS Step Functions** — Managed ETL workflow orchestration.
 * **Amazon EventBridge** — Scheduled triggers for streaming pipeline refresh.
 * **Amazon DynamoDB** — Lightweight control and audit logging for pipelines.
@@ -74,7 +80,15 @@ Note: Streaming operates near-real-time (sub-minute) using Serverless AWS servic
 * `public.taxi_trip_simulated_today_vw`: simulated today trips for live comparison.
 * `public.taxi_trip_top_traffic_vw`: baseline busiest day for benchmarking.
 
+## 📊 Snowflake Key Tables and Views
+
+* 'NYC_TAXI_DB.BATCH_DATA.TRIP_DATA: batch trip data ingested from S3
+* 'NYC_TAXI_DB.BATCH_DATA.TAXI_ZONE_LOOKUP: taxi zone lookup ingested table from S3
+* 'NYC_TAXI_DB.BATCH_DATA.TAXI_TRIP_DATA_VW: trip data view 
 ---
+## 📊 Snowflake vs. Redshift Performance Snapshot Comparision
+* Results of the same adhoc queries run across Redshift and Snowflake.
+  ![](docs/Snowflake_vs_Redshift_Benchmark.jpg)
 
 ## 📈 KPI Metrics in Dashboard
 
